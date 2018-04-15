@@ -25,7 +25,7 @@
 #### Download jre8 base image from https://store.docker.com/images/oracle-serverjre-8
 #### You might need to sign up an account
 ## Build images
-      # sh -c build.sh
+      # ./build.sh
 
 
 
