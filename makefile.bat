@@ -1,1 +1,0 @@
-go.exe build -i -o dockerize.exe main.go compress.go

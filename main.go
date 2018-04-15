@@ -15,6 +15,11 @@ var jar string
 var output string
 var port []string
 var expose bool
+const (
+	header = 1
+	body = 2
+	footer = 3
+)
 func init(){
 	var ports string
 	flag.IntVar(&jdkVersion,"jdk",8,"-jdk [jdk version default by 8]")
@@ -31,25 +36,24 @@ func init(){
 }
 func main() {
 	shell  := ""
+	writeShellScript(&shell,"",header)
 	compress := compressUtil{}
-
+	outputPath := strings.TrimRight(output ,"/") +  "/"
 	if len(jar) > 0 {
 		fileInfo,_ := os.Stat(jar)
-		outputPath := strings.TrimRight(output ,"/") + "/" + fileInfo.Name()
-		if compress.compressFiles([]string{jar,makeDockerfile(fileInfo.Name())},outputPath){
+		if compress.compressFiles([]string{jar,makeDockerfile(fileInfo.Name())},outputPath + fileInfo.Name() + ".tar"){
 			fmt.Println("successfully packed "  + jar)
-			shell += "cat " + fileInfo.Name()  + ".tar | docker import - " + strings.ToLower(fileInfo.Name()) + "\n"
+			writeShellScript(&shell,fileInfo.Name(),body)
 		}else {
 			fmt.Println("failed to pack " + jar)
 		}
-	} else{ //jars in directory
+	} else{
 	filepath.Walk(directory,func(path string, info os.FileInfo, err error) error{
 		if strings.Index(path,".jar") == (len(path) - 4){
 			fmt.Println("packing " + path )
-			outputPath := strings.TrimRight(output ,"/") + "/" + info.Name()
-			if compress.compressFiles([]string{path,makeDockerfile(info.Name())},outputPath){
+			if compress.compressFiles([]string{path,makeDockerfile(info.Name())},outputPath + info.Name() + ".tar"){
 				fmt.Println("successfully packed " + path )
-				shell += "cat " + info.Name()  + ".tar | docker import - " + strings.ToLower(info.Name()) + "\n"
+				writeShellScript(&shell,info.Name(),body)
 			}else {
 				fmt.Println("failed to pack "  + info.Name())
 			}
@@ -58,15 +62,16 @@ func main() {
 	})
 	}
 	fmt.Println("All docker images has been successfully packed!")
-	fmt.Println("generating shell script # import.sh")
-	err := ioutil.WriteFile(strings.TrimRight(output ,"/") + "/import.sh",[]byte(shell),0666)
+	fmt.Println("generating shell script # build.sh")
+	writeShellScript(&shell,"",footer)
+	err := ioutil.WriteFile(strings.TrimRight(output ,"/") + "/build.sh",[]byte(shell),0666)
 	if err == nil{
 		fmt.Println("successfully generated shell script!")
 	}else {
 		fmt.Println("failed to generate shell script.")
 	}
 	instruction :=
-		"Before uploading these tarballs to portainer or using import.sh you need to follow the instructions below\n" +
+		"Before uploading these tarballs to portainer or using build.sh you need to follow the instructions below\n" +
 		"# docker login\n" +
 		"# docker pull store/oracle/serverjre:" + string(jdkVersion); fmt.Println (instruction)
 	os.Remove(output + "/Dockerfile")
@@ -90,5 +95,16 @@ func makeDockerfile(file string)string{
 		panic("failed to write Dockerfile at: " + output + "/Dockerfile")
 	}
 	return outputPath
+}
+
+func writeShellScript(content *string,tar string,pos int){
+	switch pos {
+	case header:
+		*content += "mkdir -p dockerizer_tmp\n"
+	case body:
+		*content += fmt.Sprintf("tar xvf %s.tar -C dockerizer_tmp\ndocker build -t %s dockerizer_tmp\nrm dockerizer_tmp/%s\nrm dockerizer_tmp/Dockerfile\n",tar,strings.ToLower(tar),tar)
+	case footer:
+		*content += "rm -r dockerizer_tmp"
+	}
 }
 

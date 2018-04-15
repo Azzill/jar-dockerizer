@@ -31,6 +31,6 @@ func (*compressUtil)compressFiles(files []string,output string)bool{
 	tarWrite.Close()
 	gzipWriter.Close()
 	os.Remove(output + ".tar")
-	err := ioutil.WriteFile(output + ".tar",buffer.Bytes(),0666)
+	err := ioutil.WriteFile(output,buffer.Bytes(),0666)
 	return  err == nil
 }
