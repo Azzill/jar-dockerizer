@@ -1,5 +1,5 @@
 # jar-dockerizer
-  ## a dockerize tool for java8
+  ## a dockerize tool for java with openjdk
 ## Installation
       # go.exe build -i -o dockerize main.go compress.go
 ## Usage 
@@ -8,7 +8,7 @@
   #### -jar string
       -jar [jar file]
   #### -jdk int
-      -jdk [jdk version default by 8] (only support 8)
+      -jdk [jdk version default by 8]
   #### -o string
       -o [tar output directory] default current directory (default ".")
   #### -p string
@@ -21,9 +21,10 @@
 ## What will be built in the output directory
 #### the tarballs compressed with Dockerfile and jar
 #### the "build.sh" for docker to import these tarballs
-## Download base image in Docker
-#### Download jre8 base image from https://store.docker.com/images/oracle-serverjre-8
-#### You might need to sign up an account
+## Pull base image in Docker
+    # docker pull openjdk:8
+## Supported version from https://store.docker.com/images/openjdk
+
 ## Build images
       # ./build.sh
 

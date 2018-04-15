@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-var jdkVersion int
+var jdkVersion string
 var directory string
 var jar string
 var output string
@@ -22,7 +22,7 @@ const (
 )
 func init(){
 	var ports string
-	flag.IntVar(&jdkVersion,"jdk",8,"-jdk [jdk version default by 8]")
+	flag.StringVar(&jdkVersion,"jdk","8","-jdk [jdk version default by 8]")
 	flag.StringVar(&directory,"d","","-d [jars' directory]")
 	flag.StringVar(&jar,"jar","","-jar [jar file]")
 	flag.StringVar(&output,"o",".","-o [tar output directory] default current directory")
@@ -70,17 +70,13 @@ func main() {
 	}else {
 		fmt.Println("failed to generate shell script.")
 	}
-	instruction :=
-		"Before uploading these tarballs to portainer or using build.sh you need to follow the instructions below\n" +
-		"# docker login\n" +
-		"# docker pull store/oracle/serverjre:" + string(jdkVersion); fmt.Println (instruction)
 	os.Remove(output + "/Dockerfile")
 	return
 }
 
 func makeDockerfile(file string)string{
 	outputPath := strings.TrimRight(output ,"/") + "/Dockerfile"
-	content := fmt.Sprintf("FROM store/oracle/serverjre:%d\n" +
+	content := fmt.Sprintf("FROM openjdk:%s\n" +
 								"WORKDIR /app\n" +
 								"COPY . /app\n" +
 								"ENTRYPOINT [\"java\",\"-jar\",\"%s\"]\n",jdkVersion,file)
@@ -100,7 +96,7 @@ func makeDockerfile(file string)string{
 func writeShellScript(content *string,tar string,pos int){
 	switch pos {
 	case header:
-		*content += "mkdir -p dockerizer_tmp\n"
+		*content += "docker pull openjdk:" + jdkVersion + "\nmkdir -p dockerizer_tmp\n"
 	case body:
 		*content += fmt.Sprintf("tar xvf %s.tar -C dockerizer_tmp\ndocker build -t %s dockerizer_tmp\nrm dockerizer_tmp/%s\nrm dockerizer_tmp/Dockerfile\n",tar,strings.ToLower(tar),tar)
 	case footer:
